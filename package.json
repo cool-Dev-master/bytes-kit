@@ -1,6 +1,6 @@
 {
   "name": "bytes-kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A comprehensive bytes toolkit for formatting, parsing, and working with byte sizes.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -48,6 +48,6 @@
     "human-readable",
     "parser"
   ],
- "author": "Cool Dev Master <cooldev.master@gmail.com>",
+  "author": "Cool Dev Master <cooldev.master@gmail.com>",
   "license": "MIT"
 }
