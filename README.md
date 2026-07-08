@@ -51,9 +51,9 @@ parseBytes('100');     // => 100
 Finds the larger or smaller value between two inputs. Accepts both `number` and `string` types.
 
 ```typescript
-import { getLargeByte, getSmallerByte } from 'bytes-kit';
+import { getLargerByte, getSmallerByte } from 'bytes-kit';
 
-getLargeByte('1.5 MB', '2000 KB');  // => 2000000 (which is 2 MB)
+getLargerByte('1.5 MB', '2000 KB');  // => 2000000 (which is 2 MB)
 getSmallerByte('1.5 MB', 2000000);  // => 1500000 (which is 1.5 MB)
 ```
 
@@ -104,7 +104,7 @@ Formats a numeric number of bytes.
 ### `parseBytes(input: string): number`
 Parses a string size back to bytes. Supports standard decimal (B, KB, MB...) and binary (KiB, MiB, GiB...) units case-insensitively.
 
-### `getLargeByte(a: number | string, b: number | string): number`
+### `getLargerByte(a: number | string, b: number | string): number`
 Compares `a` and `b` and returns the larger size in bytes.
 
 ### `getSmallerByte(a: number | string, b: number | string): number`

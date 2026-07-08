@@ -1,7 +1,7 @@
 import {
   formatBytes,
   parseBytes,
-  getLargeByte,
+  getLargerByte,
   getSmallerByte,
   diffBytes,
   analyzeBytes,
@@ -31,7 +31,7 @@ console.log();
 console.log('--- 3. Larger / Smaller Comparisons ---');
 const sizeA = '1.5 MB';
 const sizeB = '2000 KB'; // 2.0 MB
-console.log(`getLargeByte("${sizeA}", "${sizeB}"):   `, getLargeByte(sizeA, sizeB));
+console.log(`getLargerByte("${sizeA}", "${sizeB}"):   `, getLargerByte(sizeA, sizeB));
 console.log(`getSmallerByte("${sizeA}", "${sizeB}"): `, getSmallerByte(sizeA, sizeB));
 console.log();
 

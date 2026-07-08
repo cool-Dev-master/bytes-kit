@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatBytes,
   parseBytes,
-  getLargeByte,
+  getLargerByte,
   getSmallerByte,
   diffBytes,
   analyzeBytes,
@@ -166,13 +166,13 @@ describe('bytes-kit utilities', () => {
     });
   });
 
-  describe('getLargeByte', () => {
+  describe('getLargerByte', () => {
     it('returns the larger of two byte values formatted as a string', () => {
-      expect(getLargeByte(1000, 2000)).toBe('2 KB');
-      expect(getLargeByte('1 KB', '2 KB')).toBe('2 KB');
-      expect(getLargeByte('2 KB', '1.5 MB')).toBe('1.5 MB');
-      expect(getLargeByte('-100 B', '0 B')).toBe('0 B');
-      expect(getLargeByte('1 KiB', '2 KiB', { binary: true })).toBe('2 KiB');
+      expect(getLargerByte(1000, 2000)).toBe('2 KB');
+      expect(getLargerByte('1 KB', '2 KB')).toBe('2 KB');
+      expect(getLargerByte('2 KB', '1.5 MB')).toBe('1.5 MB');
+      expect(getLargerByte('-100 B', '0 B')).toBe('0 B');
+      expect(getLargerByte('1 KiB', '2 KiB', { binary: true })).toBe('2 KiB');
     });
   });
 

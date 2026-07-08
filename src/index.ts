@@ -1,7 +1,7 @@
 export {
   formatBytes,
   parseBytes,
-  getLargeByte,
+  getLargerByte,
   getSmallerByte,
   diffBytes,
   analyzeBytes,

@@ -176,7 +176,7 @@ export function toBytes(input: number | string): number {
 /**
  * Compares two byte sizes and returns the larger size formatted as a string.
  */
-export function getLargeByte(a: number | string, b: number | string, options?: FormatOptions): string {
+export function getLargerByte(a: number | string, b: number | string, options?: FormatOptions): string {
   return formatBytes(Math.max(toBytes(a), toBytes(b)), options);
 }
 
