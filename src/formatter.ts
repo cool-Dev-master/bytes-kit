@@ -1,4 +1,4 @@
-import { FormatOptions, UnitType } from './types.js';
+import { FormatOptions, UnitType, ByteStats } from './types.js';
 
 const DECIMAL_UNITS: UnitType[] = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 const BINARY_UNITS: UnitType[] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
@@ -11,7 +11,7 @@ const BINARY_UNITS: UnitType[] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB',
  * @returns The formatted string representation of the byte size.
  * @throws {TypeError} If the input bytes is not a finite number.
  */
-export function format(bytes: number, options: FormatOptions = {}): string {
+export function formatBytes(bytes: number, options: FormatOptions = {}): string {
   if (typeof bytes !== 'number' || !Number.isFinite(bytes)) {
     throw new TypeError('Expected a finite number of bytes');
   }
@@ -113,4 +113,107 @@ export function format(bytes: number, options: FormatOptions = {}): string {
   const sign = isNegative ? '-' : '';
 
   return `${sign}${formattedValue}${space ? ' ' : ''}${unitSymbol}`;
+}
+
+// Map of lower-cased unit symbols to their base and power multiplier.
+const UNIT_POWER_MAP: Record<string, { base: number; exponent: number }> = {};
+DECIMAL_UNITS.forEach((unit, idx) => {
+  UNIT_POWER_MAP[unit.toLowerCase()] = { base: 1000, exponent: idx };
+});
+BINARY_UNITS.forEach((unit, idx) => {
+  UNIT_POWER_MAP[unit.toLowerCase()] = { base: 1024, exponent: idx };
+});
+
+/**
+ * Parses a human-readable byte string (e.g. '10 MB', '2.5 GiB', '-500 KB') into bytes.
+ *
+ * @param input The string to parse.
+ * @returns The parsed number of bytes.
+ * @throws {TypeError} If the input is not a string.
+ * @throws {Error} If the input format or unit is invalid.
+ */
+export function parseBytes(input: string): number {
+  if (typeof input !== 'string') {
+    throw new TypeError('Expected a string to parse');
+  }
+
+  const match = /^\s*([+-]?\d+(?:\.\d+)?)\s*([a-zA-Z]*)\s*$/.exec(input);
+  if (!match) {
+    throw new Error(`Invalid byte representation: "${input}"`);
+  }
+
+  const numericValue = parseFloat(match[1]);
+  const unitStr = match[2].trim().toLowerCase();
+
+  if (!unitStr) {
+    return numericValue;
+  }
+
+  const unitConfig = UNIT_POWER_MAP[unitStr];
+  if (!unitConfig) {
+    throw new Error(`Invalid unit: "${match[2]}"`);
+  }
+
+  return numericValue * Math.pow(unitConfig.base, unitConfig.exponent);
+}
+
+/**
+ * Normalizes input (number or string) to a number of bytes.
+ */
+export function toBytes(input: number | string): number {
+  if (typeof input === 'number') {
+    if (!Number.isFinite(input)) {
+      throw new TypeError('Expected a finite number of bytes');
+    }
+    return input;
+  }
+  if (typeof input === 'string') {
+    return parseBytes(input);
+  }
+  throw new TypeError('Expected a number or a string representing bytes');
+}
+
+/**
+ * Compares two byte sizes and returns the larger size formatted as a string.
+ */
+export function getLargerByte(a: number | string, b: number | string, options?: FormatOptions): string {
+  return formatBytes(Math.max(toBytes(a), toBytes(b)), options);
+}
+
+/**
+ * Compares two byte sizes and returns the smaller size formatted as a string.
+ */
+export function getSmallerByte(a: number | string, b: number | string, options?: FormatOptions): string {
+  return formatBytes(Math.min(toBytes(a), toBytes(b)), options);
+}
+
+/**
+ * Calculates the difference between two byte sizes (a - b) and returns it formatted as a string.
+ */
+export function diffBytes(a: number | string, b: number | string, options?: FormatOptions): string {
+  return formatBytes(toBytes(a) - toBytes(b), options);
+}
+
+/**
+ * Analyzes an array of byte sizes to find the largest, smallest, and average, returning them formatted as strings.
+ */
+export function analyzeBytes(inputs: (number | string)[], options?: FormatOptions): ByteStats {
+  if (!Array.isArray(inputs)) {
+    throw new TypeError('Expected an array of byte values');
+  }
+  if (inputs.length === 0) {
+    throw new Error('Cannot analyze an empty array');
+  }
+
+  const byteValues = inputs.map(toBytes);
+  const largest = Math.max(...byteValues);
+  const smallest = Math.min(...byteValues);
+  const sum = byteValues.reduce((acc, val) => acc + val, 0);
+  const average = sum / byteValues.length;
+
+  return {
+    largest: formatBytes(largest, options),
+    smallest: formatBytes(smallest, options),
+    average: formatBytes(average, options),
+  };
 }

@@ -60,3 +60,10 @@ export interface FormatOptions {
    */
   locale?: string | boolean;
 }
+
+export interface ByteStats {
+  largest: string;
+  smallest: string;
+  average: string;
+}
+
