@@ -67,3 +67,31 @@ export interface ByteStats {
   average: string;
 }
 
+/**
+ * Global configuration that applies to all bytes-kit functions by default.
+ * Per-call options always override these.
+ */
+export interface GlobalConfig {
+  /**
+   * Default formatting options applied to every function call.
+   * Any per-call `options` argument will override these.
+   */
+  space?: boolean;
+  binary?: boolean;
+  decimalPlaces?: number;
+  fixedDecimals?: boolean;
+  locale?: string | boolean;
+
+  /**
+   * If true (default), functions throw on invalid input — matching the original behavior.
+   * If false, errors are handled gracefully via `onError` and a safe fallback is returned.
+   * @default true
+   */
+  throwOnError?: boolean;
+
+  /**
+   * Called with the Error when `throwOnError` is false and an error occurs.
+   * If not provided, falls back to `console.error`.
+   */
+  onError?: (error: Error) => void;
+}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   formatBytes,
   parseBytes,
@@ -6,7 +6,18 @@ import {
   getSmallerByte,
   diffBytes,
   analyzeBytes,
+  isEqualBytes,
+  sumBytes,
+  sortBytes,
+  isValidByte,
+  detectUnit,
 } from './formatter.js';
+import { defaultConfig, getConfig, resetConfig } from './config.js';
+
+// Always restore global config after each test so tests are isolated.
+afterEach(() => {
+  resetConfig();
+});
 
 describe('bytes-kit formatter', () => {
   describe('validation', () => {
@@ -157,7 +168,7 @@ describe('bytes-kit utilities', () => {
       expect(parseBytes('-1 KiB')).toBe(-1024);
     });
 
-    it('throws errors for invalid formats or units', () => {
+    it('throws on invalid formats or units (default throwOnError: true)', () => {
       expect(() => parseBytes('abc')).toThrow();
       expect(() => parseBytes('10 MBB')).toThrow();
       expect(() => parseBytes('10.5.5 MB')).toThrow();
@@ -208,13 +219,238 @@ describe('bytes-kit utilities', () => {
       expect(binaryStats.average).toBe('1.5 KiB');
     });
 
-    it('throws error for empty array', () => {
+    it('throws error for empty array (default throwOnError: true)', () => {
       expect(() => analyzeBytes([])).toThrow();
     });
 
-    it('throws TypeError for non-array', () => {
+    it('throws TypeError for non-array (default throwOnError: true)', () => {
       // @ts-expect-error - testing runtime type validation
       expect(() => analyzeBytes(null)).toThrow(TypeError);
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+describe('bytes-kit GlobalConfig', () => {
+  describe('defaultConfig + throwOnError: false', () => {
+    it('formatBytes returns fallback instead of throwing', () => {
+      defaultConfig({ throwOnError: false });
+      // @ts-expect-error - intentional bad input
+      expect(formatBytes('not-a-number')).toBe('0 B');
+      expect(formatBytes(NaN)).toBe('0 B');
+    });
+
+    it('parseBytes returns 0 instead of throwing', () => {
+      defaultConfig({ throwOnError: false });
+      expect(parseBytes('bad input')).toBe(0);
+      // @ts-expect-error - intentional bad input
+      expect(parseBytes(null)).toBe(0);
+    });
+
+    it('analyzeBytes returns empty stats instead of throwing', () => {
+      defaultConfig({ throwOnError: false });
+      const result = analyzeBytes([]);
+      expect(result).toEqual({ largest: '', smallest: '', average: '' });
+    });
+  });
+
+  describe('global formatting defaults', () => {
+    it('applies global binary: true to formatBytes', () => {
+      defaultConfig({ binary: true });
+      expect(formatBytes(1024)).toBe('1 KiB');
+    });
+
+    it('per-call option overrides global default', () => {
+      defaultConfig({ binary: true });
+      expect(formatBytes(1000, { binary: false })).toBe('1 KB');
+    });
+
+    it('applies global space: false to formatBytes', () => {
+      defaultConfig({ space: false });
+      expect(formatBytes(1000)).toBe('1KB');
+      expect(formatBytes(1024, { binary: true })).toBe('1KiB');
+    });
+
+    it('applies global decimalPlaces to all formatting functions', () => {
+      defaultConfig({ decimalPlaces: 0 });
+      expect(formatBytes(1337)).toBe('1 KB');
+      expect(getLargerByte('1.5 MB', '2.7 MB')).toBe('3 MB');
+      expect(diffBytes('2.9 MB', '1 MB')).toBe('2 MB');
+    });
+  });
+
+  describe('onError callback', () => {
+    it('calls onError instead of throwing when throwOnError: false', () => {
+      const errors: Error[] = [];
+      defaultConfig({
+        throwOnError: false,
+        onError: (err) => errors.push(err),
+      });
+      parseBytes('invalid');
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toBeInstanceOf(Error);
+      expect(errors[0].message).toContain('Invalid byte representation');
+    });
+
+    it('does not call onError when input is valid', () => {
+      const errors: Error[] = [];
+      defaultConfig({
+        throwOnError: false,
+        onError: (err) => errors.push(err),
+      });
+      parseBytes('1 MB');
+      expect(errors).toHaveLength(0);
+    });
+  });
+
+  describe('resetConfig', () => {
+    it('restores default throw behavior after reset', () => {
+      defaultConfig({ throwOnError: false });
+      // @ts-expect-error - intentional bad input
+      expect(formatBytes('oops')).toBe('0 B'); // no throw
+      resetConfig();
+      // @ts-expect-error - intentional bad input
+      expect(() => formatBytes('oops')).toThrow(); // back to throw
+    });
+  });
+
+  describe('getConfig', () => {
+    it('returns a read-only clone of the current configuration', () => {
+      defaultConfig({ binary: true, space: false });
+      const config = getConfig();
+      expect(config.binary).toBe(true);
+      expect(config.space).toBe(false);
+      expect(config.throwOnError).toBe(true);
+
+      // Mutating the returned config object should not mutate internal state
+      // @ts-expect-error - testing readonly / mutation avoidance
+      config.space = true;
+      expect(getConfig().space).toBe(false);
+    });
+  });
+});
+
+describe('bytes-kit New Utility APIs', () => {
+  describe('isValidByte', () => {
+    it('returns true for valid byte inputs', () => {
+      expect(isValidByte('1 MB')).toBe(true);
+      expect(isValidByte('5 GiB')).toBe(true);
+      expect(isValidByte(1024)).toBe(true);
+      expect(isValidByte(0)).toBe(true);
+      expect(isValidByte('-50 KB')).toBe(true);
+    });
+
+    it('returns false for invalid byte inputs', () => {
+      expect(isValidByte('abc')).toBe(false);
+      expect(isValidByte('1 XB')).toBe(false);
+      expect(isValidByte(NaN)).toBe(false);
+      expect(isValidByte(Infinity)).toBe(false);
+      // @ts-expect-error - testing invalid type
+      expect(isValidByte(null)).toBe(false);
+    });
+
+    it('never throws or calls onError', () => {
+      let called = false;
+      defaultConfig({
+        throwOnError: false,
+        onError: () => { called = true; }
+      });
+      expect(isValidByte('invalid')).toBe(false);
+      expect(called).toBe(false);
+    });
+  });
+
+  describe('detectUnit', () => {
+    it('detects the unit correctly', () => {
+      expect(detectUnit('5 GiB')).toBe('GiB');
+      expect(detectUnit('20 MB')).toBe('MB');
+      expect(detectUnit('500')).toBe('B');
+      expect(detectUnit('  1.5  kb  ')).toBe('KB');
+    });
+
+    it('respects global error handling on invalid unit/input', () => {
+      // throwOnError is default true:
+      expect(() => detectUnit('abc')).toThrow();
+
+      // throwOnError: false:
+      defaultConfig({ throwOnError: false });
+      expect(detectUnit('abc')).toBe('B');
+    });
+  });
+
+  describe('isEqualBytes', () => {
+    it('compares equal normalized byte values', () => {
+      expect(isEqualBytes('1 MB', '1000 KB')).toBe(true);
+      expect(isEqualBytes('1 MiB', '1024 KiB')).toBe(true);
+      expect(isEqualBytes(1000, '1 KB')).toBe(true);
+    });
+
+    it('returns false for unequal byte values', () => {
+      expect(isEqualBytes('1 MB', '1 MiB')).toBe(false);
+      expect(isEqualBytes(1000, 2000)).toBe(false);
+    });
+
+    it('respects global error handling', () => {
+      expect(() => isEqualBytes('invalid', '1 MB')).toThrow();
+
+      defaultConfig({ throwOnError: false });
+      // since both return fallback 0, 0 === 0 is true
+      expect(isEqualBytes('invalid', 'another-invalid')).toBe(true);
+    });
+  });
+
+  describe('sumBytes', () => {
+    it('sums byte values correctly', () => {
+      expect(sumBytes(['1 MB', '500 KB'])).toBe('1.5 MB');
+      expect(sumBytes([1000, '2 KB'])).toBe('3 KB');
+    });
+
+    it('respects per-call options and global configuration', () => {
+      expect(sumBytes(['1 KiB', '2 KiB'], { binary: true })).toBe('3 KiB');
+      
+      defaultConfig({ binary: true });
+      expect(sumBytes(['1 KiB', '2 KiB'])).toBe('3 KiB');
+    });
+
+    it('respects global error handling', () => {
+      expect(() => sumBytes(['1 MB', 'invalid'])).toThrow();
+
+      defaultConfig({ throwOnError: false });
+      expect(sumBytes(['1 MB', 'invalid'])).toBe('1 MB'); // invalid parses to 0
+    });
+  });
+
+  describe('sortBytes', () => {
+    it('sorts ascending by default', () => {
+      const values = ['1 MB', '200 KB', '2 GB'];
+      expect(sortBytes(values)).toEqual(['200 KB', '1 MB', '2 GB']);
+    });
+
+    it('sorts descending when order is desc', () => {
+      const values = ['1 MB', '200 KB', '2 GB'];
+      expect(sortBytes(values, 'desc')).toEqual(['2 GB', '1 MB', '200 KB']);
+    });
+
+    it('preserves the original representations', () => {
+      const values = [1000, '200 B', '1.5 KB'];
+      expect(sortBytes(values)).toEqual(['200 B', 1000, '1.5 KB']);
+    });
+
+    it('returns a new array (preserves original)', () => {
+      const values = ['2 MB', '1 MB'];
+      const sorted = sortBytes(values);
+      expect(sorted).not.toBe(values);
+      expect(values).toEqual(['2 MB', '1 MB']);
+    });
+
+    it('respects global error handling', () => {
+      expect(() => sortBytes(['1 MB', 'invalid'])).toThrow();
+
+      defaultConfig({ throwOnError: false });
+      // invalid maps to 0, sorting should position it first
+      expect(sortBytes(['1 MB', 'invalid'])).toEqual(['invalid', '1 MB']);
+    });
+  });
+});
+
+
