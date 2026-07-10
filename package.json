@@ -1,7 +1,7 @@
 {
   "name": "bytes-kit",
   "version": "1.1.0",
-  "description": "A comprehensive bytes toolkit for formatting, parsing, and working with byte sizes.",
+  "description": "Utilities for formatting, parsing, and working with byte sizes.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -26,6 +26,7 @@
   "homepage": "https://github.com/cool-Dev-master/bytes-kit#readme",
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
+    "clean": "rm -rf dist",
     "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "play": "tsx playground.ts",
     "test": "vitest run",
@@ -41,13 +42,23 @@
   "keywords": [
     "bytes",
     "byte",
+    "bytes-kit",
+    "byte-kit",
     "format",
     "formatter",
     "toolkit",
     "size",
     "human-readable",
-    "parser"
+    "parser",
+    "bytes-converter",
+    "filesize",
+    "binary"
   ],
+  "sideEffects": false,
   "author": "Cool Dev Master <cooldev.master@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/cool-Dev-master"
+  }
 }

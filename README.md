@@ -8,6 +8,7 @@ A lightweight, type-safe, and zero-dependency utility for formatting, parsing, c
 - 📦 **Dual package** (CommonJS & ES Modules)
 - 🔒 **Fully type-safe** with TypeScript types included
 - ⚙️ **Highly customizable** (decimal places, binary vs. decimal units, spacing, custom forced units)
+- 🌍 **Global Configuration** with customizable error handling (throwOnError, onError)
 - 🧭 **Parsing & Manipulation** (parse strings back to bytes, compare sizes, get differences, calculate stats on collections)
 - 🌍 **Localization support** using `Intl.NumberFormat`
 
@@ -18,6 +19,28 @@ A lightweight, type-safe, and zero-dependency utility for formatting, parsing, c
 ```bash
 npm install bytes-kit
 ```
+
+---
+
+## Global Configuration
+
+You can configure global defaults once. Per-call options always take precedence.
+
+```typescript
+import bytes from 'bytes-kit';
+
+bytes.defaultConfig({
+  binary: true,
+  space: false,
+  throwOnError: false, // Don't crash on invalid input
+  onError(error) {
+    console.error('[App error handler]', error.message);
+  }
+});
+```
+
+* `bytes.getConfig()`: Returns a read-only clone of the current configuration.
+* `bytes.resetConfig()`: Restores config back to factory defaults.
 
 ---
 
@@ -48,26 +71,61 @@ parseBytes('100');     // => 100
 ```
 
 ### 3. Comparing Byte Sizes
-Finds the larger or smaller value between two inputs. Accepts both `number` and `string` types.
+Finds the larger or smaller value between two inputs. Returns a formatted string.
 
 ```typescript
 import { getLargerByte, getSmallerByte } from 'bytes-kit';
 
-getLargerByte('1.5 MB', '2000 KB');  // => 2000000 (which is 2 MB)
-getSmallerByte('1.5 MB', 2000000);  // => 1500000 (which is 1.5 MB)
+getLargerByte('1.5 MB', '2000 KB');  // => '2 MB'
+getSmallerByte('1.5 MB', 2000000);   // => '1.5 MB'
 ```
 
-### 4. Byte Difference
-Computes the difference between two byte sizes (`a - b`).
+### 4. Byte Equality & Difference
+Checks equality or computes the difference between two byte sizes (`a - b`).
 
 ```typescript
-import { diffBytes } from 'bytes-kit';
+import { isEqualBytes, diffBytes } from 'bytes-kit';
 
-diffBytes('1.5 MB', '500 KB'); // => 1000000 (1 MB)
-diffBytes('500 KB', '1.5 MB'); // => -1000000 (-1 MB)
+isEqualBytes('1 MB', '1000 KB'); // => true
+isEqualBytes('1 MiB', '1024 KiB'); // => true
+
+diffBytes('1.5 MB', '500 KB'); // => '1 MB'
+diffBytes('500 KB', '1.5 MB'); // => '-1 MB'
 ```
 
-### 5. Analyzing Collections
+### 5. Summing Collections
+Sums an array of byte sizes and returns the formatted sum.
+
+```typescript
+import { sumBytes } from 'bytes-kit';
+
+sumBytes(['1 MB', '500 KB']); // => '1.5 MB'
+```
+
+### 6. Sorting Collections
+Sorts an array of byte values while preserving their original formats (string or number). Returns a new array.
+
+```typescript
+import { sortBytes } from 'bytes-kit';
+
+sortBytes(['1 MB', '200 KB', '2 GB']); // => ['200 KB', '1 MB', '2 GB']
+sortBytes(['1 MB', '200 KB', '2 GB'], 'desc'); // => ['2 GB', '1 MB', '200 KB']
+```
+
+### 7. Helper Utilities
+Validate representations or detect units:
+
+```typescript
+import { isValidByte, detectUnit } from 'bytes-kit';
+
+isValidByte('1 MB');   // => true
+isValidByte('invalid'); // => false
+
+detectUnit('5 GiB');   // => 'GiB'
+detectUnit('500');     // => 'B'
+```
+
+### 8. Analyzing Collections
 Parses a list of mixed sizes and returns an analysis object:
 
 ```typescript
@@ -77,9 +135,9 @@ const stats = analyzeBytes(['500 KB', '1.2 MB', 3000000, '4.5 MiB']);
 /*
 Returns:
 {
-  largest: 4718592,   // 4.5 MiB
-  smallest: 500000,   // 500 KB
-  average: 2354648    // 2.35 MB
+  largest: '4.72 MB',
+  smallest: '500 KB',
+  average: '2.35 MB'
 }
 */
 ```
@@ -104,17 +162,29 @@ Formats a numeric number of bytes.
 ### `parseBytes(input: string): number`
 Parses a string size back to bytes. Supports standard decimal (B, KB, MB...) and binary (KiB, MiB, GiB...) units case-insensitively.
 
-### `getLargerByte(a: number | string, b: number | string): number`
-Compares `a` and `b` and returns the larger size in bytes.
+### `getLargerByte(a: number | string, b: number | string, options?: FormatOptions): string`
+Compares `a` and `b` and returns the larger size formatted as a string.
 
-### `getSmallerByte(a: number | string, b: number | string): number`
-Compares `a` and `b` and returns the smaller size in bytes.
+### `getSmallerByte(a: number | string, b: number | string, options?: FormatOptions): string`
+Compares `a` and `b` and returns the smaller size formatted as a string.
 
-### `diffBytes(a: number | string, b: number | string): number`
-Returns the difference `a - b` in bytes.
+### `diffBytes(a: number | string, b: number | string, options?: FormatOptions): string`
+Returns the difference `a - b` formatted as a string.
 
-### `analyzeBytes(inputs: (number | string)[]): ByteStats`
-Returns the `largest`, `smallest`, and `average` byte sizes from an array of mixed byte inputs.
+### `isEqualBytes(a: number | string, b: number | string): boolean`
+Returns true if `a` and `b` represent equivalent byte capacities.
+
+### `sumBytes(values: (number | string)[], options?: FormatOptions): string`
+Sums the array of byte sizes and returns the formatted sum.
+
+### `sortBytes(values: (number | string)[], order?: 'asc' | 'desc'): (number | string)[]`
+Sorts the collection of byte sizes and returns a new sorted array.
+
+### `isValidByte(value: number | string): boolean`
+Returns true if `value` is a valid byte representation.
+
+### `detectUnit(value: string): UnitType`
+Returns the detected `UnitType` symbol of the byte representation.
 
 ---
 
