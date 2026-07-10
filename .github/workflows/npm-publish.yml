@@ -55,8 +55,11 @@ jobs:
           LOCAL_VERSION=$(node -p "require('./package.json').version")
           NPM_VERSION=$(npm view bytes-kit version 2>/dev/null || echo "0.0.0")
           
+          echo "Local version in package.json: $LOCAL_VERSION"
+          echo "Latest version on npm registry: $NPM_VERSION"
+          
           if [ "$LOCAL_VERSION" != "$NPM_VERSION" ]; then
-            echo "New version detected ($LOCAL_VERSION). Publishing to npm..."
+            echo "Version change detected: $NPM_VERSION -> $LOCAL_VERSION. Publishing to npm..."
             npm publish --provenance
           else
             echo "Version $LOCAL_VERSION is already published on npm. Skipping publication."
