@@ -472,3 +472,44 @@ export function sortBytes(
   }
 }
 
+/**
+ * Converts a byte value (number or string) to a target unit.
+ *
+ * @param input The input byte value (e.g. '10 MB', or raw number of bytes).
+ * @param targetFormat The unit to convert to (e.g. 'KB', 'MiB').
+ * @param options Additional options. If `format` is true, returns a formatted string (e.g. "10000 KB").
+ *                You can also pass formatting options (like `decimalPlaces`, `fixedDecimals`, `space`, `locale`).
+ * @returns The converted value as a number, or as a formatted string if `options.format` is true.
+ */
+export function convertBytes(
+  input: number | string,
+  targetFormat: UnitType,
+  options?: FormatOptions & { format?: boolean },
+): number | string {
+  const cfg = mergeConfig(options);
+  try {
+    const bytes = toBytes(input);
+    const unitLower = targetFormat.toLowerCase();
+    const unitConfig = UNIT_POWER_MAP[unitLower];
+    if (!unitConfig) {
+      throw new Error(`Invalid target unit: "${targetFormat}"`);
+    }
+
+    const convertedValue = bytes / Math.pow(unitConfig.base, unitConfig.exponent);
+
+    if (options?.format) {
+      return _formatBytesCore(bytes, { ...cfg, unit: targetFormat });
+    }
+
+    return convertedValue;
+  } catch (err) {
+    const fallback = options?.format ? '0 B' : 0;
+    return handleError(
+      err instanceof Error ? err : new Error(String(err)),
+      fallback,
+      cfg,
+    );
+  }
+}
+
+
