@@ -11,6 +11,7 @@ import {
   sortBytes,
   isValidByte,
   detectUnit,
+  convertBytes,
 } from './formatter.js';
 import { defaultConfig, getConfig, resetConfig } from './config.js';
 
@@ -449,6 +450,47 @@ describe('bytes-kit New Utility APIs', () => {
       defaultConfig({ throwOnError: false });
       // invalid maps to 0, sorting should position it first
       expect(sortBytes(['1 MB', 'invalid'])).toEqual(['invalid', '1 MB']);
+    });
+  });
+
+  describe('convertBytes', () => {
+    it('converts byte value to target unit returning a number by default', () => {
+      expect(convertBytes('10 MB', 'KB')).toBe(10000);
+      expect(convertBytes('1 GB', 'MB')).toBe(1000);
+      expect(convertBytes(10000000, 'MB')).toBe(10);
+      expect(convertBytes('10.5 MB', 'B')).toBe(10500000);
+    });
+
+    it('handles binary conversions correctly', () => {
+      expect(convertBytes('1 GiB', 'MiB')).toBe(1024);
+      expect(convertBytes('1024 KiB', 'MiB')).toBe(1);
+      expect(convertBytes(1024 * 1024 * 1024, 'GiB')).toBe(1);
+    });
+
+    it('handles cross-base conversions (binary <-> decimal)', () => {
+      expect(convertBytes('1 GiB', 'MB')).toBe(1073.741824);
+      expect(convertBytes('1 MB', 'KiB')).toBe(1000000 / 1024);
+    });
+
+    it('returns formatted string when options.format is true', () => {
+      expect(convertBytes('10 MB', 'KB', { format: true })).toBe('10000 KB');
+      expect(convertBytes('1 GiB', 'MiB', { format: true })).toBe('1024 MiB');
+      expect(convertBytes('1.5 MB', 'KB', { format: true, space: false })).toBe('1500KB');
+      expect(convertBytes(1024, 'KiB', { format: true, decimalPlaces: 1, fixedDecimals: true })).toBe('1.0 KiB');
+    });
+
+    it('throws errors on invalid inputs or units by default', () => {
+      expect(() => convertBytes('invalid', 'MB')).toThrow();
+      expect(() => convertBytes('10 MB', 'invalid' as any)).toThrow();
+    });
+
+    it('respects global error handling (throwOnError: false)', () => {
+      defaultConfig({ throwOnError: false });
+      expect(convertBytes('invalid', 'MB')).toBe(0);
+      expect(convertBytes('10 MB', 'invalid' as any)).toBe(0);
+
+      expect(convertBytes('invalid', 'MB', { format: true })).toBe('0 MB');
+      expect(convertBytes('10 MB', 'invalid' as any, { format: true })).toBe('0 B');
     });
   });
 });

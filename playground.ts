@@ -10,6 +10,7 @@ import bytes, {
   analyzeBytes,
   isValidByte,
   detectUnit,
+  convertBytes,
 } from './src/index.js';
 
 console.log('=== Bytes Kit Playground ===\n');
@@ -70,7 +71,15 @@ console.log('sortBytes(arr): ', sortBytes(arr));
 console.log('analyzeBytes(arr):', analyzeBytes(arr));
 console.log();
 
-// 7. Error Handling Fallback Check
+// 7. Conversion Operations
+console.log('--- 6.5. Conversion Operations ---');
+console.log('convertBytes("10 MB", "KB"):                  ', convertBytes('10 MB', 'KB'));
+console.log('convertBytes("1 GiB", "MiB"):                 ', convertBytes('1 GiB', 'MiB'));
+console.log('convertBytes("1 GiB", "MB"):                  ', convertBytes('1 GiB', 'MB'));
+console.log('convertBytes("1.5 MB", "KB", { format: true }):', convertBytes('1.5 MB', 'KB', { format: true }));
+console.log();
+
+// 8. Error Handling Fallback Check
 console.log('--- 7. Error Handling Fallback Check ---');
 console.log('isValidByte("invalid"):          ', isValidByte('invalid')); // never calls onError
 console.log('parseBytes("invalid"):           ', parseBytes('invalid'));  // calls onError, returns 0
