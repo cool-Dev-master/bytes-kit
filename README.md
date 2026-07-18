@@ -1,6 +1,6 @@
 # bytes-kit
 
-A lightweight, type-safe, and zero-dependency utility for formatting, parsing, comparing, and analyzing byte sizes (supporting both decimal base-1000 and binary base-1024 units).
+A lightweight, type-safe, and zero-dependency utility for formatting, parsing, converting, comparing, and analyzing byte sizes (supporting both decimal base-1000 and binary base-1024 units).
 
 ## Features
 
@@ -9,7 +9,7 @@ A lightweight, type-safe, and zero-dependency utility for formatting, parsing, c
 - 🔒 **Fully type-safe** with TypeScript types included
 - ⚙️ **Highly customizable** (decimal places, binary vs. decimal units, spacing, custom forced units)
 - 🌍 **Global Configuration** with customizable error handling (throwOnError, onError)
-- 🧭 **Parsing & Manipulation** (parse strings back to bytes, compare sizes, get differences, calculate stats on collections)
+- 🧭 **Parsing, Conversion & Manipulation** (parse strings back to bytes, convert between units, compare sizes, get differences, calculate stats on collections)
 - 🌍 **Localization support** using `Intl.NumberFormat`
 
 ---
@@ -112,7 +112,19 @@ sortBytes(['1 MB', '200 KB', '2 GB']); // => ['200 KB', '1 MB', '2 GB']
 sortBytes(['1 MB', '200 KB', '2 GB'], 'desc'); // => ['2 GB', '1 MB', '200 KB']
 ```
 
-### 7. Helper Utilities
+### 7. Converting Byte Units
+Converts a byte value (number or string) to a target unit (e.g. `'KB'`, `'MiB'`). Returns a raw number by default, or a formatted string if `{ format: true }` is provided:
+
+```typescript
+import { convertBytes } from 'bytes-kit';
+
+convertBytes('10 MB', 'KB');                  // => 10000 (number)
+convertBytes('1 GiB', 'MiB');                 // => 1024 (number)
+convertBytes('1 GiB', 'MB');                  // => 1073.741824 (number)
+convertBytes('1.5 MB', 'KB', { format: true }); // => '1500 KB' (string)
+```
+
+### 8. Helper Utilities
 Validate representations or detect units:
 
 ```typescript
@@ -125,7 +137,7 @@ detectUnit('5 GiB');   // => 'GiB'
 detectUnit('500');     // => 'B'
 ```
 
-### 8. Analyzing Collections
+### 9. Analyzing Collections
 Parses a list of mixed sizes and returns an analysis object:
 
 ```typescript
@@ -185,6 +197,9 @@ Returns true if `value` is a valid byte representation.
 
 ### `detectUnit(value: string): UnitType`
 Returns the detected `UnitType` symbol of the byte representation.
+
+### `convertBytes(input: number | string, targetFormat: UnitType, options?: FormatOptions & { format?: boolean }): number | string`
+Converts a byte value (number or string) to a target unit. If `options.format` is true, returns a formatted string using the specified formatting options; otherwise, returns the raw converted number.
 
 ---
 
