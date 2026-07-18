@@ -18,9 +18,28 @@ A lightweight, type-safe, and zero-dependency utility for formatting, parsing, c
 
 ```bash
 npm install bytes-kit
+# or
+yarn add bytes-kit
+# or
+pnpm add bytes-kit
 ```
 
 ---
+
+
+## Import
+
+This package supports both ES Modules (`import`) and CommonJS (`require`) styles:
+
+```typescript
+// ES Modules (ESM)
+import bytes, { formatBytes } from 'bytes-kit';
+
+// CommonJS (CJS)
+const bytes = require('bytes-kit').default;
+const { formatBytes } = require('bytes-kit');
+```
+
 
 ## Global Configuration
 
